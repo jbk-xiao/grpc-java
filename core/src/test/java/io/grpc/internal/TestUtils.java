@@ -47,7 +47,7 @@ public final class TestUtils {
   public abstract static class StandardLoadBalancerProvider extends LoadBalancerProvider {
     private final String policyName;
 
-    public StandardLoadBalancerProvider(String policyName) {
+    protected StandardLoadBalancerProvider(String policyName) {
       this.policyName = policyName;
     }
 
@@ -141,5 +141,14 @@ public final class TestUtils {
   }
 
   private TestUtils() {
+  }
+
+  public static class NoopChannelLogger extends ChannelLogger {
+
+    @Override
+    public void log(ChannelLogLevel level, String message) {}
+
+    @Override
+    public void log(ChannelLogLevel level, String messageFormat, Object... args) {}
   }
 }

@@ -28,6 +28,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import android.os.Build;
 import com.google.common.io.BaseEncoding;
 import io.grpc.CallOptions;
 import io.grpc.Metadata;
@@ -43,6 +44,7 @@ import io.grpc.internal.TransportTracer;
 import io.grpc.internal.WritableBuffer;
 import io.grpc.testing.TestMethodDescriptors;
 import java.io.ByteArrayInputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -62,8 +64,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 @RunWith(RobolectricTestRunner.class)
+@Config(sdk = Build.VERSION_CODES.P)
 public final class CronetClientStreamTest {
 
   @Mock private CronetClientTransport transport;
@@ -176,7 +180,7 @@ public final class CronetClientStreamTest {
     // 5 writes are called.
     verify(cronetStream, times(5)).write(isA(ByteBuffer.class), eq(false));
     ByteBuffer fakeBuffer = ByteBuffer.allocateDirect(8);
-    fakeBuffer.position(8);
+    ((Buffer) fakeBuffer).position(8);
     verify(cronetStream, times(2)).flush();
 
     // 5 onWriteCompleted callbacks for previous writes.
@@ -294,7 +298,7 @@ public final class CronetClientStreamTest {
     ArgumentCaptor<ByteBuffer> bufferCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
     verify(cronetStream, times(1)).write(bufferCaptor.capture(), isA(Boolean.class));
     ByteBuffer buffer = bufferCaptor.getValue();
-    buffer.position(request.length());
+    ((Buffer) buffer).position(request.length());
     verify(cronetStream, times(1)).flush();
 
     // Receive response header

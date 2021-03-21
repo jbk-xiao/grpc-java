@@ -71,7 +71,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -141,11 +140,8 @@ public class RoundRobinLoadBalancerTest {
   }
 
   @After
-  @SuppressWarnings("deprecation")
   public void tearDown() throws Exception {
     verifyNoMoreInteractions(mockArgs);
-    verify(mockHelper, never()).createSubchannel(
-        ArgumentMatchers.<List<EquivalentAddressGroup>>any(), any(Attributes.class));
   }
 
   @Test
@@ -381,13 +377,12 @@ public class RoundRobinLoadBalancerTest {
     loadBalancer.handleNameResolutionError(Status.NOT_FOUND.withDescription("nameResolutionError"));
 
     verify(mockHelper, times(3)).createSubchannel(any(CreateSubchannelArgs.class));
-    verify(mockHelper, times(3))
+    verify(mockHelper, times(2))
         .updateBalancingState(stateCaptor.capture(), pickerCaptor.capture());
 
     Iterator<ConnectivityState> stateIterator = stateCaptor.getAllValues().iterator();
     assertEquals(CONNECTING, stateIterator.next());
     assertEquals(READY, stateIterator.next());
-    assertEquals(TRANSIENT_FAILURE, stateIterator.next());
 
     LoadBalancer.PickResult pickResult = pickerCaptor.getValue().pickSubchannel(mockArgs);
     assertEquals(readySubchannel, pickResult.getSubchannel());

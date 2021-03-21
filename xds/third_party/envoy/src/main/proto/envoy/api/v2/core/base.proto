@@ -9,7 +9,6 @@ import "envoy/type/percent.proto";
 import "envoy/type/semantic_version.proto";
 
 import "google/protobuf/any.proto";
-import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 
@@ -93,7 +92,7 @@ message BuildVersion {
   type.SemanticVersion version = 1;
 
   // Free-form build information.
-  // Envoy defines several well known keys in the source/common/common/version.h file
+  // Envoy defines several well known keys in the source/common/version/version.h file
   google.protobuf.Struct metadata = 2;
 }
 

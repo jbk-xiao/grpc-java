@@ -30,8 +30,8 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import com.github.udpa.udpa.data.orca.v1.OrcaLoadReport;
@@ -53,7 +53,6 @@ import io.grpc.LoadBalancer.Subchannel;
 import io.grpc.LoadBalancer.SubchannelPicker;
 import io.grpc.LoadBalancer.SubchannelStateListener;
 import io.grpc.ManagedChannel;
-import io.grpc.NameResolver;
 import io.grpc.Status;
 import io.grpc.SynchronizationContext;
 import io.grpc.inprocess.InProcessChannelBuilder;
@@ -302,7 +301,7 @@ public class OrcaOobUtilTest {
       assertThat(orcaServiceImps[i].calls).hasSize(1);
     }
 
-    verifyZeroInteractions(backoffPolicyProvider);
+    verifyNoInteractions(backoffPolicyProvider);
   }
 
   @Test
@@ -388,7 +387,7 @@ public class OrcaOobUtilTest {
       assertThat(orcaServiceImps[i].calls).hasSize(1);
     }
 
-    verifyZeroInteractions(backoffPolicyProvider);
+    verifyNoInteractions(backoffPolicyProvider);
   }
 
   @Test
@@ -424,7 +423,7 @@ public class OrcaOobUtilTest {
     assertLog(subchannel.logs, "DEBUG: Received an ORCA report: " + report);
     verify(mockOrcaListener0).onLoadReport(eq(report));
 
-    verifyZeroInteractions(backoffPolicyProvider);
+    verifyNoInteractions(backoffPolicyProvider);
   }
 
   @Test
@@ -871,12 +870,6 @@ public class OrcaOobUtilTest {
     @Override
     public ScheduledExecutorService getScheduledExecutorService() {
       return fakeClock.getScheduledExecutorService();
-    }
-
-    @Deprecated
-    @Override
-    public NameResolver.Factory getNameResolverFactory() {
-      throw new AssertionError("Should not be called");
     }
 
     @Override

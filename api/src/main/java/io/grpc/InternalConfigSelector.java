@@ -16,7 +16,9 @@
 
 package io.grpc;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
@@ -37,15 +39,32 @@ public abstract class InternalConfigSelector {
   public abstract Result selectConfig(LoadBalancer.PickSubchannelArgs args);
 
   public static final class Result {
+    private final Status status;
     private final Object config;
-    private final CallOptions callOptions;
     @Nullable
-    private final Runnable committedCallback;
+    public ClientInterceptor interceptor;
 
-    private Result(Object config, CallOptions callOptions, @Nullable Runnable committedCallback) {
-      this.config = checkNotNull(config, "config");
-      this.callOptions = checkNotNull(callOptions, "callOptions");
-      this.committedCallback = committedCallback;
+    private Result(
+        Status status, Object config, ClientInterceptor interceptor) {
+      this.status = checkNotNull(status, "status");
+      this.config = config;
+      this.interceptor = interceptor;
+    }
+
+    /**
+     * Creates a {@code Result} with the given error status.
+     */
+    public static Result forError(Status status) {
+      checkArgument(!status.isOk(), "status is OK");
+      return new Result(status, null, null);
+    }
+
+    /**
+     * Returns the status of the config selection operation. If status is not {@link Status#OK},
+     * this result should not be used.
+     */
+    public Status getStatus() {
+      return status;
     }
 
     /**
@@ -57,18 +76,11 @@ public abstract class InternalConfigSelector {
     }
 
     /**
-     * Returns a config-selector-modified CallOptions for the RPC.
-     */
-    public CallOptions getCallOptions() {
-      return callOptions;
-    }
-
-    /**
-     * Returns a callback to be invoked when the RPC no longer needs a picker.
+     * Returns an interceptor that will be applies to calls.
      */
     @Nullable
-    public Runnable getCommittedCallback() {
-      return committedCallback;
+    public ClientInterceptor getInterceptor() {
+      return interceptor;
     }
 
     public static Builder newBuilder() {
@@ -77,13 +89,12 @@ public abstract class InternalConfigSelector {
 
     public static final class Builder {
       private Object config;
-      private CallOptions callOptions;
-      private Runnable committedCallback;
+      private ClientInterceptor interceptor;
 
       private Builder() {}
 
       /**
-       * Sets the parsed config.
+       * Sets the parsed config. This field is required.
        *
        * @return this
        */
@@ -93,27 +104,21 @@ public abstract class InternalConfigSelector {
       }
 
       /**
-       * Sets the CallOptions.
+       * Sets the interceptor. This field is optional.
        *
        * @return this
        */
-      public Builder setCallOptions(CallOptions callOptions) {
-        this.callOptions = checkNotNull(callOptions, "callOptions");
+      public Builder setInterceptor(ClientInterceptor interceptor) {
+        this.interceptor = checkNotNull(interceptor, "interceptor");
         return this;
       }
 
       /**
-       * Sets the interceptor.
-       *
-       * @return this
+       * Build this {@link Result}.
        */
-      public Builder setCommittedCallback(@Nullable Runnable committedCallback) {
-        this.committedCallback = committedCallback;
-        return this;
-      }
-
       public Result build() {
-        return new Result(config, callOptions, committedCallback);
+        checkState(config != null, "config is not set");
+        return new Result(Status.OK, config, interceptor);
       }
     }
   }

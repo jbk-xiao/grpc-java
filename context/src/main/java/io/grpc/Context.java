@@ -826,17 +826,21 @@ public class Context {
     @CanIgnoreReturnValue
     public boolean cancel(Throwable cause) {
       boolean triggeredCancel = false;
+      ScheduledFuture<?> localPendingDeadline = null;
       synchronized (this) {
         if (!cancelled) {
           cancelled = true;
           if (pendingDeadline != null) {
             // If we have a scheduled cancellation pending attempt to cancel it.
-            pendingDeadline.cancel(false);
+            localPendingDeadline = pendingDeadline;
             pendingDeadline = null;
           }
           this.cancellationCause = cause;
           triggeredCancel = true;
         }
+      }
+      if (localPendingDeadline != null) {
+        localPendingDeadline.cancel(false);
       }
       if (triggeredCancel) {
         notifyAndClearListeners();
@@ -943,6 +947,8 @@ public class Context {
    */
   public interface CancellationListener {
     /**
+     * Notifies that a context was cancelled.
+     *
      * @param context the newly cancelled context.
      */
     void cancelled(Context context);
@@ -967,7 +973,6 @@ public class Context {
     /**
      * Get the value from the {@link #current()} context for this key.
      */
-    @SuppressWarnings("unchecked")
     public T get() {
       return get(Context.current());
     }

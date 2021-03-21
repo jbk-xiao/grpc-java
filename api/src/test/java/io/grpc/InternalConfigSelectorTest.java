@@ -17,7 +17,10 @@
 package io.grpc;
 
 import static com.google.common.truth.Truth.assertThat;
+import static org.mockito.Mockito.mock;
 
+import io.grpc.InternalConfigSelector.Result;
+import io.grpc.Status.Code;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -28,26 +31,20 @@ public class InternalConfigSelectorTest {
   @Test
   public void resultBuilder() {
     Object config = "fake_config";
-    CallOptions callOptions = CallOptions.DEFAULT.withAuthority("fake authority");
-    Runnable committedCallback = new Runnable() {
-      @Override
-      public void run() {}
-    };
     InternalConfigSelector.Result.Builder builder = InternalConfigSelector.Result.newBuilder();
-
+    ClientInterceptor interceptor = mock(ClientInterceptor.class);
     InternalConfigSelector.Result result =
-        builder.setConfig(config).setCallOptions(callOptions).build();
+        builder.setConfig(config).setInterceptor(interceptor).build();
+    assertThat(result.getStatus().isOk()).isTrue();
     assertThat(result.getConfig()).isEqualTo(config);
-    assertThat(result.getCallOptions()).isEqualTo(callOptions);
-    assertThat(result.getCommittedCallback()).isNull();
+    assertThat(result.getInterceptor()).isSameInstanceAs(interceptor);
+  }
 
-    result = builder
-        .setConfig(config)
-        .setCallOptions(callOptions)
-        .setCommittedCallback(committedCallback)
-        .build();
-    assertThat(result.getConfig()).isEqualTo(config);
-    assertThat(result.getCallOptions()).isEqualTo(callOptions);
-    assertThat(result.getCommittedCallback()).isSameInstanceAs(committedCallback);
+  @Test
+  public void errorResult() {
+    Result result = Result.forError(Status.INTERNAL.withDescription("failed"));
+    assertThat(result.getStatus().isOk()).isFalse();
+    assertThat(result.getStatus().getCode()).isEqualTo(Code.INTERNAL);
+    assertThat(result.getStatus().getDescription()).isEqualTo("failed");
   }
 }

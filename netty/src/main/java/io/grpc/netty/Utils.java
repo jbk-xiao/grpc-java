@@ -46,6 +46,7 @@ import io.netty.channel.ServerChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.http2.Http2Exception;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.util.AsciiString;
@@ -56,13 +57,13 @@ import java.lang.reflect.Constructor;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLException;
 
 /**
  * Common utility methods.
@@ -166,7 +167,6 @@ class Utils {
         preferDirect ? PooledByteBufAllocator.defaultNumDirectArena() : 0,
         PooledByteBufAllocator.defaultPageSize(),
         maxOrder,
-        PooledByteBufAllocator.defaultTinyCacheSize(),
         PooledByteBufAllocator.defaultSmallCacheSize(),
         PooledByteBufAllocator.defaultNormalCacheSize(),
         PooledByteBufAllocator.defaultUseCacheForAllThreads());
@@ -267,6 +267,9 @@ class Utils {
       ClosedChannelException extraT = new ClosedChannelException();
       extraT.initCause(t);
       return Status.UNKNOWN.withDescription("channel closed").withCause(extraT);
+    }
+    if (t instanceof DecoderException && t.getCause() instanceof SSLException) {
+      return Status.UNAVAILABLE.withDescription("ssl exception").withCause(t);
     }
     if (t instanceof IOException) {
       return Status.UNAVAILABLE.withDescription("io exception").withCause(t);
@@ -455,7 +458,7 @@ class Utils {
       b.setSocketOptionTimeoutMillis(timeoutMillis);
     }
 
-    for (Entry<ChannelOption<?>, Object> opt : config.getOptions().entrySet()) {
+    for (Map.Entry<ChannelOption<?>, Object> opt : config.getOptions().entrySet()) {
       ChannelOption<?> key = opt.getKey();
       // Constants are pooled, so there should only be one instance of each constant
       if (key.equals(SO_LINGER) || key.equals(SO_TIMEOUT)) {
@@ -470,7 +473,7 @@ class Utils {
         = NettySocketSupport.getNativeSocketOptions(channel);
     if (nativeOptions != null) {
       b.setTcpInfo(nativeOptions.tcpInfo); // may be null
-      for (Entry<String, String> entry : nativeOptions.otherInfo.entrySet()) {
+      for (Map.Entry<String, String> entry : nativeOptions.otherInfo.entrySet()) {
         b.addOption(entry.getKey(), entry.getValue());
       }
     }

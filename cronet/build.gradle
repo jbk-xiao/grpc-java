@@ -13,13 +13,13 @@ repositories {
 }
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 29
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 27
+        targetSdkVersion 29
         versionCode 1
         versionName "1.0"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         debug { minifyEnabled false }
@@ -42,7 +42,10 @@ dependencies {
 
     testImplementation libraries.junit
     testImplementation libraries.mockito
-    testImplementation libraries.robolectric
+    testImplementation (libraries.robolectric) {
+        // Unreleased change: https://github.com/robolectric/robolectric/pull/5432
+        exclude group: 'com.google.auto.service', module: 'auto-service'
+    }
 }
 
 task javadocs(type: Javadoc) {
